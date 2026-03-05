@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/hobby/Desktop/最近做的小工具/内容飞轮-gemini/20260224-V3/.env*)",
+      "Bash(npm install)",
+      "Bash(npm run dev)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(ls -la \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/提示词&其他参考文件\")",
+      "Bash(chmod +x \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/start.sh\")",
+      "Bash(./start.sh)",
+      "Bash(chmod +x \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/启动内容飞轮.command\")",
+      "Bash(lsof -PiTCP -sTCP:LISTEN)",
+      "Bash(lsof -i :5173)",
+      "Bash(chmod +x \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/内容飞轮启动器.app/Contents/MacOS/启动内容飞轮\")",
+      "Bash(osacompile -o \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/🚀 启动内容飞轮.app\" \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/启动内容飞轮.scpt\")",
+      "Bash(chmod -R +x \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/🚀 启动内容飞轮.app\")",
+      "Bash(xattr -dr com.apple.quarantine \"/Users/hobby/Desktop/最近做的小工具/20260224-内容飞轮-gemini/20260224-V3/🚀 启动内容飞轮.app\")",
+      "Bash(npm run build)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(git init)",
+      "Bash(git add .)"
+    ]
+  }
+}

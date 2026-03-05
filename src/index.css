@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Noto Serif SC", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+.react-flow__handle {
+  width: 14px !important;
+  height: 14px !important;
+  background-color: #8B9D83 !important;
+  border: 2px solid #FAF9F6 !important;
+  transition: all 0.2s ease !important;
+  cursor: crosshair !important;
+  z-index: 10 !important;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.5) !important;
+  background-color: #4B8A6E !important;
+  box-shadow: 0 0 0 4px rgba(75, 138, 110, 0.2) !important;
+}
+
+/* 滚动条样式 - 始终显示 */
+.custom-scrollbar,
+.overflow-y-scroll,
+.overflow-y-auto {
+  scrollbar-gutter: stable;
+  scrollbar-width: auto !important;
+  -ms-overflow-style: scrollbar !important;
+  overflow-y: scroll !important;
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E8E8E3;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #A0A09C;
+  border-radius: 5px;
+  min-height: 40px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #80807A;
+}
+
+/* Firefox 兼容 */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #A0A09C #E8E8E3;
+}
