@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { X, Plus, GripVertical, Trash2, Edit2, Check, XCircle, Star } from 'lucide-react';
 import { useStore, PromptTemplate, PromptCategory, PromptSubCategory } from '../store';
 import { v4 as uuidv4 } from 'uuid';
@@ -313,19 +313,17 @@ export function PromptLibraryPanel({ isOpen, onClose }: PromptLibraryPanelProps)
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
-                      {!category.isDefault && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm('确定删除此分类？其中的提示词将移至未分类。')) {
-                              deleteCategory(category.id);
-                            }
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded"
-                        >
-                          <Trash2 className="w-3 h-3 text-red-500" />
-                        </button>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('确定删除此分类？其中的提示词将移至未分类。')) {
+                            deleteCategory(category.id);
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-500" />
+                      </button>
                     </>
                   )}
                 </div>

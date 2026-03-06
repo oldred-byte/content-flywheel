@@ -24,7 +24,9 @@
       "Bash(git branch -M main)",
       "Bash(git push -u origin main)",
       "Bash(npx vercel@latest --prod)",
-      "Bash(npx vercel@latest login)"
+      "Bash(npx vercel@latest login)",
+      "Bash(git push)",
+      "Bash(npm run lint)"
     ]
   }
 }

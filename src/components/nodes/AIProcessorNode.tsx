@@ -1,5 +1,5 @@
 import { Handle, Position, useReactFlow } from '@xyflow/react';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore, PromptTemplate } from '../../store';
 import { Loader2, Copy, Rocket, RefreshCw, Settings2, X, Plus, Trash2, RotateCcw, Library, Star } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -135,19 +135,56 @@ export default function AIProcessorNode({ id, data, selected }: { id: string; da
       // Try streaming first, fallback to non-streaming if fails
     let useStreaming = true;
 
+    // 获取默认模型ID
+    const defaultModel = activeProfile.models.find(m => m.modelId === activeProfile.defaultModelId);
+    const modelId = defaultModel?.modelId || activeProfile.models[0]?.modelId || 'gpt-4';
+
     try {
-      const response = await fetch(`${activeProfile.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeProfile.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: activeProfile.modelName,
-          messages: [{ role: 'user', content: fullPrompt }],
-          stream: useStreaming,
-        }),
-      });
+      let response;
+
+      if (activeProfile.apiFormat === 'anthropic') {
+        // Anthropic 格式
+        response = await fetch(`${activeProfile.baseUrl}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': activeProfile.apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: [{ role: 'user', content: fullPrompt }],
+            max_tokens: 4096,
+            stream: useStreaming,
+          }),
+        });
+      } else if (activeProfile.apiFormat === 'gemini') {
+        // Gemini 原生格式
+        response = await fetch(
+          `${activeProfile.baseUrl}/models/${modelId}:streamGenerateContent?key=${activeProfile.apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+            }),
+          }
+        );
+      } else {
+        // OpenAI 格式（包括兼容端点）
+        response = await fetch(`${activeProfile.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeProfile.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: [{ role: 'user', content: fullPrompt }],
+            stream: useStreaming,
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
@@ -252,7 +289,7 @@ export default function AIProcessorNode({ id, data, selected }: { id: string; da
               'Authorization': `Bearer ${activeProfile.apiKey}`,
             },
             body: JSON.stringify({
-              model: activeProfile.modelName,
+              model: modelId,
               messages: [{ role: 'user', content: fullPrompt }],
               stream: false,
             }),
@@ -331,6 +368,7 @@ export default function AIProcessorNode({ id, data, selected }: { id: string; da
       label: '新模板',
       prompt: '请输入提示词内容...',
       isDefault: false,
+      order: customTemplates.length,
     };
     addCustomTemplate(newTemplate);
   };
@@ -388,6 +426,7 @@ export default function AIProcessorNode({ id, data, selected }: { id: string; da
           label: editingTemplate.label + ' (副本)',
           prompt: editingTemplate.prompt,
           isDefault: false,
+          order: customTemplates.length,
         });
         // 切换到新创建的副本
         const newTemplate = customTemplates[customTemplates.length - 1];

@@ -15,12 +15,37 @@ import {
 } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 
+// 支持的 API 格式类型
+export type ApiFormat = 'openai' | 'anthropic' | 'gemini' | 'custom';
+
+// 模型配置
+export type ModelConfig = {
+  id: string;
+  name: string;           // 显示名称，如 "GPT-4"、"Claude 3.5"
+  modelId: string;        // API 调用时用的 ID，如 "gpt-4"、"claude-3-5-sonnet"
+  isDefault?: boolean;    // 是否默认选中
+};
+
+// 高级参数配置
+export type AdvancedConfig = {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  customHeaders?: Record<string, string>;
+  customBody?: Record<string, any>;
+};
+
 export type APIProfile = {
   id: string;
-  name: string;
-  baseUrl: string;
+  name: string;           // 供应商名称，如 "OpenAI"、"Kimi"、"我的 Gemini"
   apiKey: string;
-  modelName: string;
+  baseUrl: string;        // 基础 URL，如 "https://api.openai.com/v1"
+  apiFormat: ApiFormat;   // API 格式类型
+  models: ModelConfig[];  // 该供应商支持的模型列表
+  defaultModelId?: string;// 默认使用的模型 ID
+  advanced?: AdvancedConfig; // 高级参数（可选）
 };
 
 export type PromptTemplate = {
@@ -728,9 +753,10 @@ export const useStore = create<AppState>()(
         });
       },
       onConnect: (connection: Connection) => {
-        const newEdge = {
-          ...connection,
+        const newEdge: Edge = {
           id: uuidv4(),
+          source: connection.source,
+          target: connection.target,
           animated: false,
           style: { stroke: '#8B9D83', strokeDasharray: '5,5' },
         };
@@ -970,8 +996,43 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'content-canvas-storage',
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
+        // 版本 2 -> 3: 迁移 API Profile 到新的格式
+        if (version < 3) {
+          if (persistedState.apiProfiles && Array.isArray(persistedState.apiProfiles)) {
+            persistedState.apiProfiles = persistedState.apiProfiles.map((profile: any) => {
+              // 如果已经是新格式，保持不变
+              if (profile.apiFormat && profile.models) {
+                return profile;
+              }
+              // 旧格式迁移：将单个 modelName 转换为 models 数组
+              const oldModelName = profile.modelName || 'gpt-4';
+              const oldBaseUrl = profile.baseUrl || '';
+
+              // 自动检测 API 格式
+              let apiFormat: ApiFormat = 'openai';
+              if (oldBaseUrl.includes('anthropic')) {
+                apiFormat = 'anthropic';
+              } else if (oldBaseUrl.includes('google') || oldBaseUrl.includes('gemini')) {
+                apiFormat = 'gemini';
+              }
+
+              return {
+                ...profile,
+                apiFormat,
+                models: [{
+                  id: uuidv4(),
+                  name: oldModelName,
+                  modelId: oldModelName,
+                  isDefault: true,
+                }],
+                defaultModelId: oldModelName,
+              };
+            });
+          }
+        }
+
         // 版本 1 -> 2: 迁移到新的提示词库结构
         if (version < 2) {
           // 1. 先处理模板名称更新（保留原有逻辑）
