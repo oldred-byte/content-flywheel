@@ -93,6 +93,46 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               <Plus className="w-4 h-4" />
               添加配置
             </button>
+
+            {/* 快速预设 */}
+            <div className="mt-4 pt-4 border-t border-[#D5D5D0]">
+              <p className="text-xs text-[#888] mb-2">快速预设</p>
+              <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={() => addProfile({
+                    name: 'Gemini (OpenAI兼容)',
+                    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+                    apiKey: '',
+                    modelName: 'gemini-1.5-flash'
+                  })}
+                  className="text-left px-2 py-1.5 text-xs text-[#666] hover:bg-[#E5E5E0] rounded transition-colors"
+                >
+                  + Gemini (OpenAI兼容)
+                </button>
+                <button
+                  onClick={() => addProfile({
+                    name: 'OpenAI',
+                    baseUrl: 'https://api.openai.com/v1',
+                    apiKey: '',
+                    modelName: 'gpt-4o-mini'
+                  })}
+                  className="text-left px-2 py-1.5 text-xs text-[#666] hover:bg-[#E5E5E0] rounded transition-colors"
+                >
+                  + OpenAI
+                </button>
+                <button
+                  onClick={() => addProfile({
+                    name: 'OpenRouter',
+                    baseUrl: 'https://openrouter.ai/api/v1',
+                    apiKey: '',
+                    modelName: 'google/gemini-2.0-flash-exp:free'
+                  })}
+                  className="text-left px-2 py-1.5 text-xs text-[#666] hover:bg-[#E5E5E0] rounded transition-colors"
+                >
+                  + OpenRouter (免费)
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Content */}

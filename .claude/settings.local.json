@@ -22,7 +22,9 @@
       "Bash(git commit:*)",
       "Bash(git remote add origin https://github.com/bbstar021/content-flywheel.git)",
       "Bash(git branch -M main)",
-      "Bash(git push -u origin main)"
+      "Bash(git push -u origin main)",
+      "Bash(npx vercel@latest --prod)",
+      "Bash(npx vercel@latest login)"
     ]
   }
 }
