@@ -26,7 +26,8 @@
       "Bash(npx vercel@latest --prod)",
       "Bash(npx vercel@latest login)",
       "Bash(git push)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Read(//Users/hobby/Desktop/**)"
     ]
   }
 }

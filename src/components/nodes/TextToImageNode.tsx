@@ -99,6 +99,7 @@ export default function TextToImageNode({ id, data, selected }: { id: string; da
 
   const [selectedCssTemplate, setSelectedCssTemplate] = useState(data.cssTemplateId || 'minimal');
   const [isCssModalOpen, setIsCssModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -210,87 +211,88 @@ export default function TextToImageNode({ id, data, selected }: { id: string; da
 
   const pages = paginateText(content, aspectRatio);
 
-  // 将 base64 数据转换为 Blob
-  const base64ToBlob = (base64: string): Blob => {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: 'image/png' });
-  };
-
   const handleDownload = async () => {
     if (pages.length === 0) return;
+    if (isDownloading) return;
 
+    setIsDownloading(true);
     try {
-      // 首先生成所有图片数据
+      // 生成所有图片数据
       const images: { name: string; dataUrl: string }[] = [];
       for (let i = 0; i < pages.length; i++) {
         const el = pageRefs.current[i];
         if (el) {
-          const dataUrl = await toPng(el, { cacheBust: true, quality: 0.95, pixelRatio: 2 });
-          images.push({
-            name: pages.length === 1 ? `content-${Date.now()}.png` : `page-${i + 1}.png`,
-            dataUrl
-          });
+          try {
+            const dataUrl = await toPng(el, {
+              cacheBust: true,
+              quality: 0.95,
+              pixelRatio: 2,
+              skipFonts: false,
+              backgroundColor: '#FAF9F6',
+              includeQueryParams: true,
+              imagePlaceholder: undefined,
+            });
+            images.push({
+              name: pages.length === 1 ? `content-${Date.now()}.png` : `page-${i + 1}.png`,
+              dataUrl
+            });
+          } catch (pageErr: any) {
+            console.error(`生成第 ${i + 1} 页失败:`, pageErr);
+            // 尝试降级到 pixelRatio 1 再试一次
+            try {
+              const dataUrl = await toPng(el, {
+                cacheBust: true,
+                quality: 0.9,
+                pixelRatio: 1,
+                skipFonts: false,
+                backgroundColor: '#FAF9F6',
+              });
+              images.push({
+                name: pages.length === 1 ? `content-${Date.now()}.png` : `page-${i + 1}.png`,
+                dataUrl
+              });
+            } catch (retryErr) {
+              throw new Error(`第 ${i + 1} 页生成失败: ${pageErr.message || '未知错误'}`);
+            }
+          }
         }
       }
 
       if (images.length === 0) {
-        alert('图片生成失败');
+        alert('图片生成失败：没有可用的页面内容');
         return;
       }
 
-      // 使用 File System Access API 让用户选择保存位置
-      // @ts-ignore - TypeScript 可能不认识 showDirectoryPicker
-      if (window.showDirectoryPicker) {
-        try {
-          // @ts-ignore
-          const dirHandle = await window.showDirectoryPicker();
-
-          // 保存所有图片到选择的文件夹
-          for (const img of images) {
-            const base64 = img.dataUrl.split(',')[1];
-            const blob = base64ToBlob(base64);
-            const fileHandle = await dirHandle.getFileHandle(img.name, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-          }
-
-          alert(`已成功保存 ${images.length} 张图片到选择的文件夹`);
-        } catch (err: any) {
-          // 用户取消选择文件夹
-          if (err.name === 'AbortError') {
-            return;
-          }
-          throw err;
-        }
+      // 直接下载到浏览器默认下载位置
+      if (images.length === 1) {
+        const link = document.createElement('a');
+        link.download = images[0].name;
+        link.href = images[0].dataUrl;
+        link.click();
       } else {
-        // 浏览器不支持 File System Access API，回退到逐个下载
-        if (images.length === 1) {
-          const link = document.createElement('a');
-          link.download = images[0].name;
-          link.href = images[0].dataUrl;
-          link.click();
-        } else {
-          // 多图片时逐个下载
-          for (let i = 0; i < images.length; i++) {
-            setTimeout(() => {
-              const link = document.createElement('a');
-              link.download = images[i].name;
-              link.href = images[i].dataUrl;
-              link.click();
-            }, i * 200); // 错开下载时间，避免被浏览器拦截
-          }
-          alert('浏览器不支持选择文件夹，已逐个下载图片到默认下载位置');
+        for (let i = 0; i < images.length; i++) {
+          setTimeout(() => {
+            const link = document.createElement('a');
+            link.download = images[i].name;
+            link.href = images[i].dataUrl;
+            link.click();
+          }, i * 200);
         }
+        alert(`已下载 ${images.length} 张图片`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to generate image', err);
-      alert('图片生成失败');
+      let errorMsg = '图片生成失败';
+      if (err.message?.includes('SecurityError') || err.message?.includes('cross-origin')) {
+        errorMsg = '图片生成失败：跨域图片限制。请尝试更换头像为本地图片。';
+      } else if (err.message?.includes('canvas') || err.message?.includes('tainted')) {
+        errorMsg = '图片生成失败：画布被污染。请检查是否使用了外部图片资源。';
+      } else if (err.message) {
+        errorMsg = `图片生成失败：${err.message}`;
+      }
+      alert(errorMsg);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -351,7 +353,7 @@ export default function TextToImageNode({ id, data, selected }: { id: string; da
               <label className="relative cursor-pointer group">
                 <div className="w-12 h-12 rounded-full bg-[#E5E5E0] border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
                   {avatar ? (
-                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" crossOrigin="anonymous" />
                   ) : (
                     <UserCircle className="w-8 h-8 text-[#A0A09C]" />
                   )}
@@ -469,12 +471,26 @@ export default function TextToImageNode({ id, data, selected }: { id: string; da
             <Trash2 className="w-4 h-4" />
             清空
           </button>
-          <button 
+          <button
             onClick={handleDownload}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white bg-[#4B8A6E] hover:bg-[#3A7058] transition-colors shadow-sm"
+            disabled={isDownloading}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors shadow-sm ${
+              isDownloading
+                ? 'bg-[#8BA89C] cursor-not-allowed'
+                : 'bg-[#4B8A6E] hover:bg-[#3A7058]'
+            }`}
           >
-            <Download className="w-4 h-4" />
-            {pages.length > 1 ? '下载全部' : '下载图片'}
+            {isDownloading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                {pages.length > 1 ? '下载全部' : '下载图片'}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -513,7 +529,7 @@ export default function TextToImageNode({ id, data, selected }: { id: string; da
                     <div className="px-8 pt-8 pb-4 flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-[#E5E5E0] overflow-hidden flex-shrink-0">
                         {avatar ? (
-                          <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                          <img src={avatar} alt="Avatar" className="w-full h-full object-cover" crossOrigin="anonymous" />
                         ) : (
                           <div className="w-full h-full bg-[#D5D5D0]"></div>
                         )}
